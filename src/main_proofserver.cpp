@@ -23,23 +23,25 @@ int main(int argc, char **argv) {
     int port = 8080;
     LOG_INFO("Starting at port 8080");
 
-    std::string zkeyFileLoc;
-    std::string binariesFolderLoc;
+    // The path to the zkey file, e.g., "/app/zkLogin.zkey"
+    std::string zkeyFilePath;
+    // The folder name in which zkLogin and zkLogin.dat binaries can be found.
+    std::string binariesFolderPath;
 
     if (argc == 3) {
-        zkeyFileLoc = argv[1];
-        binariesFolderLoc = argv[2];
+        zkeyFilePath = argv[1];
+        binariesFolderPath = argv[2];
     } else if (argc == 1) {
         LOG_INFO("Reading from environment variables ZKEY and WITNESS_BINARIES");
         if (const char* x = getenv("ZKEY")) {
-            zkeyFileLoc = x;
+            zkeyFilePath = x;
         } else {
             printUsage();
             return -1;
         }
 
         if (const char* x = getenv("WITNESS_BINARIES")) {
-            binariesFolderLoc = x;
+            binariesFolderPath = x;
         } else {
             printUsage();
             return -1;
@@ -49,7 +51,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    SingleProver prover(zkeyFileLoc, binariesFolderLoc);
+    SingleProver prover(zkeyFilePath, binariesFolderPath);
     ProverAPI proverAPI(prover);
     Address addr(Ipv4::any(), Port(port));
 

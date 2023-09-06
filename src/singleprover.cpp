@@ -6,33 +6,33 @@
 #include "logger.hpp"
 #include "wtns_utils.hpp"
 
-SingleProver::SingleProver(std::string zkeyFileLoc, std::string binariesFolderLoc) {
+SingleProver::SingleProver(std::string zkeyFilePath, std::string binariesFolderPath) {
     LOG_INFO("SingleProver::SingleProver begin");
     auto t0 = std::chrono::steady_clock::now();
 
-    witnessBinaryLoc = binariesFolderLoc + "/zkLogin";
-    std::string witnessDatLoc = binariesFolderLoc + "/zkLogin.dat";
+    witnessBinaryFilePath = binariesFolderPath + "/zkLogin";
+    std::string witnessDatFilePath = binariesFolderPath + "/zkLogin.dat";
 
     // Check if all the files exist
-    std::ifstream file1(witnessBinaryLoc.c_str());
+    std::ifstream file1(witnessBinaryFilePath.c_str());
     if (! file1.good()) {
-        throw std::invalid_argument("cannot find the file zkLogin at " + witnessBinaryLoc);
+        throw std::invalid_argument("cannot find the file zkLogin at " + witnessBinaryFilePath);
     }
 
-    std::ifstream file2(witnessDatLoc.c_str());
+    std::ifstream file2(witnessDatFilePath.c_str());
     if (! file2.good()) {
-        throw std::invalid_argument("cannot find the file zkLogin.dat at " + witnessBinaryLoc);
+        throw std::invalid_argument("cannot find the file zkLogin.dat at " + witnessDatFilePath);
     }
 
-    std::ifstream file3(zkeyFileLoc.c_str());
+    std::ifstream file3(zkeyFilePath.c_str());
     if (! file3.good()) {
-        throw std::invalid_argument("cannot find the file zkLogin.zkey at " + zkeyFileLoc);
+        throw std::invalid_argument("cannot find the file zkLogin.zkey at " + zkeyFilePath);
     }
 
     mpz_init(altBbn128r);
     mpz_set_str(altBbn128r, "21888242871839275222246405745257275088548364400416034343698204186575808495617", 10);
 
-    zKey = BinFileUtils::openExisting(zkeyFileLoc, "zkey", 1);
+    zKey = BinFileUtils::openExisting(zkeyFilePath, "zkey", 1);
     zkHeader = ZKeyUtils::loadHeader(zKey.get());
 
     std::string proofStr;
@@ -97,7 +97,7 @@ json SingleProver::startProve(std::string input)
     file.close();
 
     std::string witnessFileName = generateTempFileName();
-    std::string command(witnessBinaryLoc + " " + inputFileName + " " + witnessFileName);
+    std::string command(witnessBinaryFilePath + " " + inputFileName + " " + witnessFileName);
     LOG_INFO(command);
     std::array<char, 128> buffer;
     std::string result;
