@@ -26,7 +26,7 @@ class SingleProver {
     std::unique_ptr<BinFileUtils::BinFile> zKey;
     std::mutex mtx;
 
-    json prove(AltBn128::FrElement *wtnsData);
+    std::unique_ptr<Groth16::Proof<AltBn128::Engine>> prove(AltBn128::FrElement *wtnsData);
 
 public: 
     SingleProver(std::string zkeyFilePath, std::string binariesFolderPath);

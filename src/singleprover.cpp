@@ -126,18 +126,20 @@ json SingleProver::startProve(std::string input)
     unlink(witnessFileName.c_str());
     unlink(inputFileName.c_str());
 
-    return prove(wtnsData);
+    return prove(wtnsData)->toJson();
 }
 
-json SingleProver::prove(AltBn128::FrElement *wtnsData) {
+std::unique_ptr<Groth16::Proof<AltBn128::Engine>> SingleProver::prove(AltBn128::FrElement *wtnsData) {
     // The mutex is set because the performance of prover->prove degrades significantly
     //  when multiple instances are run in parallel.
     std::lock_guard<std::mutex> guard(mtx);
+    LOG_INFO("SingleProver::prove begin");
+
     auto t1 = std::chrono::steady_clock::now();
     auto proof = prover->prove(wtnsData);
     auto t2 = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     std::string output = "Proof generation finished in " + std::to_string(duration) + "ms";
     LOG_INFO(output);
-    return proof->toJson();
+    return proof;
 }
