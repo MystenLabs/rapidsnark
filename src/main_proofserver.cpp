@@ -21,7 +21,6 @@ int main(int argc, char **argv) {
     LOG_INFO("Initializing server...");
 
     int port = 8080;
-    LOG_INFO("Starting at port 8080");
 
     // The path to the zkey file, e.g., "/app/zkLogin.zkey"
     std::string zkeyFilePath;
@@ -55,7 +54,13 @@ int main(int argc, char **argv) {
     ProverAPI proverAPI(prover);
     Address addr(Ipv4::any(), Port(port));
 
-    auto opts = Http::Endpoint::options().threads(1).maxRequestSize(128000000);
+    const auto processor_count = std::thread::hardware_concurrency();
+    std::ostringstream oss;
+    oss << processor_count << " concurrent threads are supported";
+    std::string numThreadsMsg = oss.str();
+    LOG_INFO(numThreadsMsg);
+
+    auto opts = Http::Endpoint::options().threads(processor_count).maxRequestSize(128000000);
     Http::Endpoint server(addr);
     server.init(opts);
     Router router;

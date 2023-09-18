@@ -1,6 +1,7 @@
 #ifndef SINGLEPROVER_H
 #define SINGLEPROVER_H
 
+#include <mutex>
 #include <string>
 
 #include "alt_bn128.hpp"
@@ -23,6 +24,9 @@ class SingleProver {
     std::unique_ptr<Groth16::Prover<AltBn128::Engine> > prover;
     std::unique_ptr<ZKeyUtils::Header> zkHeader;
     std::unique_ptr<BinFileUtils::BinFile> zKey;
+    std::mutex mtx;
+
+    json prove(AltBn128::FrElement *wtnsData);
 
 public: 
     SingleProver(std::string zkeyFilePath, std::string binariesFolderPath);
