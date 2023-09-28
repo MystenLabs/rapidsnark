@@ -48,16 +48,24 @@ by this one
 ./build/prover <circuit.zkey> <witness.wtns> <proof.json> <public.json>
 ````
 ## Launch prover in server mode
-````sh
-./build/proverServer  <port> <circuit1_zkey> <circuit2_zkey> ... <circuitN_zkey>
-````
-For every `circuit.circom` you have to generate with circom with --c option the `circuit_cpp` and after compilation you have to copy the executable into the `build` folder so the server can generate the witness and then the proof based on this witness.
-You have an example of the usage calling the server endpoints to generate the proof with Nodejs in `/tools/request.js`.
 
-To test a request you should pass an `input.json` as a parameter to the request call.
+In server mode, the prover also compiles the inputs to generate a witness.
+
+If your circuit's name is `circuit.circom`, then you have to generate the C++ binaries using circom ([link from circom docs](https://docs.circom.io/getting-started/computing-the-witness/#computing-the-witness-with-c)). In the end, you should have two files `circuit` and `circuit.dat`.
+
+To launch the server, set two environment variables:
+1. `ZKEY`: Pointing to the zkey file
+2.  `WITNESS_BINARIES`: Pointing to the folder in which `circuit` and `circuit.dat` are present
+
+and run
 ````sh
-node tools/request.js <input.json> <circuit>
+./build/proverServer
 ````
+
+Note 1: Compared to [iden3's rapidsnark server](https://github.com/iden3/rapidsnark), ours is simpler. Their server was designed to work with multiple zkeys, but ours only handles one. However, we found their code to be buggy in how it handles multiple simultaneous requests.
+
+Note 2: Be careful when setting the log level, e.g., DEBUG logs could contain PII. The default is set to INFO.
+
 ## Benchmark
 
 This prover uses intel assembly with ADX extensions and parallelizes as much as it can the proof generation. 

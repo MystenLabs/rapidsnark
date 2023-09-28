@@ -73,8 +73,6 @@ SingleProver::~SingleProver()
 std::string generateTempFileName() {
     char templateName[] = "/tmp/zklogin_XXXXXX";
     int fd;
-    // TODO: See if C++ stdlib has a better alternative
-    // Note: The main req for us is that it returns a unique file name
     if ((fd = mkstemp(templateName)) == -1) {
         throw std::runtime_error("Failed to create a unique temporary file name");
     }
@@ -87,7 +85,6 @@ json SingleProver::startProve(std::string input)
     LOG_INFO("SingleProver::startProve begin");
 
     auto t0 = std::chrono::steady_clock::now();
-    // TODO: Do not log PII. prover->prove also logs the ZK proof, which we might not want to log.
     LOG_DEBUG(input);
 
     json j = json::parse(input);
@@ -103,18 +100,17 @@ json SingleProver::startProve(std::string input)
     std::string result;
 
     int returnCode = std::system(command.c_str());
-
-    // TODO: Early fail with an unexpected returnCode
     if (returnCode != 0) {
         LOG_INFO("Unexpected returnCode");
         auto str = std::to_string(returnCode);
         LOG_INFO(str);
+        throw std::invalid_argument("Witness generation failed: check the inputs");
     }
 
     auto wtns = BinFileUtils::openExisting(witnessFileName, "wtns", 2);
     auto wtnsHeader = WtnsUtils::loadHeader(wtns.get());
     if (mpz_cmp(wtnsHeader->prime, altBbn128r) != 0) {
-        throw std::invalid_argument( "different wtns curve" );
+        throw std::invalid_argument("Different wtns curve");
     }
 
     AltBn128::FrElement *wtnsData = (AltBn128::FrElement *)wtns->getSectionData(2);
