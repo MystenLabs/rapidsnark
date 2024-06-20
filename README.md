@@ -48,7 +48,7 @@ by this one
 ./build/prover <circuit.zkey> <witness.wtns> <proof.json> <public.json>
 ````
 
-Note that the first two arguments of the command are input files whereas the last two are output files. It takes the zkey (`circuit.zkey`) and a witness (`witness.wtns`) as inputs, and outputs a proof (`proof.json`) and the public inputs (`public.json`).
+Note that the first two arguments are the input files whereas the last two correspond to the output files. It takes the zkey (`circuit.zkey`) and a witness (`witness.wtns`) as inputs, and outputs a proof (`proof.json`) and the public inputs (`public.json`).
 
 ## Launch prover in server mode
 
