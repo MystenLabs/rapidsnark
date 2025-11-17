@@ -9,7 +9,7 @@
 using namespace Pistache;
 
 // Maximum number of concurrent proof requests allowed
-constexpr int DEFAULT_MAX_CONCURRENT_REQUESTS = 10;
+constexpr int DEFAULT_MAX_CONCURRENT_REQUESTS = 20;
 
 // RAII guard for semaphore - ensures release on scope exit
 class SemaphoreGuard {
