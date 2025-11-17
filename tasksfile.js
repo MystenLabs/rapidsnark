@@ -55,7 +55,7 @@ function buildProverServer() {
         " fr.o"+
         " -L../depends/pistache/build/src -lpistache"+
         " -o proverServer"+
-        " -fmax-errors=5 -pthread -std=c++17 -fopenmp -lgmp -lsodium -O3 -g -DSANITY_CHECK", {cwd: "build", nopipe: true}
+        " -fmax-errors=5 -pthread -std=c++20 -fopenmp -lgmp -lsodium -O3 -g -DSANITY_CHECK", {cwd: "build", nopipe: true}
     );
 }
 
@@ -80,7 +80,7 @@ function buildProver() {
         " fr.cpp"+
         " fr.o"+
         " -o prover" +
-        " -fmax-errors=5 -std=c++17 -pthread -lgmp -lsodium -O3 -fopenmp", {cwd: "build", nopipe: true}
+        " -fmax-errors=5 -std=c++20 -pthread -lgmp -lsodium -O3 -fopenmp", {cwd: "build", nopipe: true}
     );
 }
 
