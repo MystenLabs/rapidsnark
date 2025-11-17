@@ -23,37 +23,28 @@ void ProverAPI::postInput(const Rest::Request& request, Http::ResponseWriter res
     // RAII guard ensures semaphore is released even if exception is thrown
     SemaphoreGuard guard(request_limit);
     
+    bool success = true;
     try {
         // Generate proof
         json j = prover.startProve(request.body());
         LOG_DEBUG(j.dump().c_str());
         
-        // Log e2e timing
-        auto request_end = std::chrono::steady_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-            request_end - request_start).count();
-        
-        std::ostringstream oss;
-        oss << "Request completed in " << duration << "ms";
-        std::string log_msg = oss.str();
-        LOG_INFO(log_msg);
-        
         response.send(Http::Code::Ok, j.dump(), MIME(Application, Json));
         
     } catch (const std::exception& e) {
-        // Log error and timing
-        auto request_end = std::chrono::steady_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-            request_end - request_start).count();
-        
+        success = false;
         auto errString = e.what();
         LOG_ERROR(errString);
-        
-        std::ostringstream oss;
-        oss << "Request failed after " << duration << "ms";
-        std::string log_msg = oss.str();
-        LOG_INFO(log_msg);
-        
         response.send(Http::Code::Bad_Request, errString);
     }
+    
+    // Log e2e timing
+    auto request_end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        request_end - request_start).count();
+    
+    std::ostringstream oss;
+    oss << "Request " << (success ? "completed" : "failed") << " in " << duration << "ms";
+    std::string log_msg = oss.str();
+    LOG_INFO(log_msg);
 }

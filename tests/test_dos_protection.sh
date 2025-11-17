@@ -37,9 +37,9 @@ send_request() {
     echo "Wave $wave - Request $num: HTTP $http_code"
 }
 
-# Wave 1: 15 concurrent requests (expect 10 accepted, 5 rejected)
-echo "Wave 1: Sending 15 concurrent requests..."
-for i in {1..15}; do
+# Wave 1: 25 concurrent requests (expect 20 accepted, 5 rejected)
+echo "Wave 1: Sending 25 concurrent requests..."
+for i in {1..25}; do
     send_request 1 $i &
 done
 wait
@@ -49,9 +49,9 @@ echo ""
 sleep 1
 echo ""
 
-# Wave 2: 12 concurrent requests (verify semaphore is released)
-echo "Wave 2: Sending 12 concurrent requests..."
-for i in {1..12}; do
+# Wave 2: 22 concurrent requests (verify semaphore is released)
+echo "Wave 2: Sending 22 concurrent requests..."
+for i in {1..22}; do
     send_request 2 $i &
 done
 wait
@@ -62,9 +62,9 @@ echo ""
 sleep 1
 echo ""
 
-# Wave 3: 20 concurrent requests (stress test)
-echo "Wave 3: Sending 20 concurrent requests (stress test)..."
-for i in {1..20}; do
+# Wave 3: 30 concurrent requests (stress test)
+echo "Wave 3: Sending 30 concurrent requests (stress test)..."
+for i in {1..30}; do
     send_request 3 $i &
 done
 wait
