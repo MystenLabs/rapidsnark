@@ -11,11 +11,12 @@ set -e
 
 # Configuration
 SERVER_URL="${SERVER_URL:-http://localhost:8080/input}"
-SAMPLE_INPUT="${SAMPLE_INPUT:-sampleZKPInputs.json}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SAMPLE_INPUT="${SAMPLE_INPUT:-$SCRIPT_DIR/tests/sampleZKPInputs.json}"
 
 if [ ! -f "$SAMPLE_INPUT" ]; then
     echo "Error: Sample input file not found at $SAMPLE_INPUT"
-    echo "Please set SAMPLE_INPUT environment variable or ensure binaries/sampleZKPInputs.json exists"
+    echo "Please set SAMPLE_INPUT environment variable or ensure $SCRIPT_DIR/tests/sampleZKPInputs.json exists"
     exit 1
 fi
 
