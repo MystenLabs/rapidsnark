@@ -33,6 +33,12 @@ npx task buildPistache
 npx task buildProverServer
 ````
 
+Or use the build script:
+
+````sh
+./tests/build_server.sh
+````
+
 ## Building proof
 
 You have a full prover compiled in the build directory.
@@ -65,13 +71,41 @@ and run
 ./build/proverServer
 ````
 
+Or use the server management scripts:
+
+````sh
+# Start server
+./tests/start_server.sh
+
+# Stop server
+./tests/stop_server.sh
+````
+
 Note 1: Compared to [iden3's rapidsnark server](https://github.com/iden3/rapidsnark), ours is simpler. Their server was designed to work with multiple zkeys, but ours only handles one. However, we found their code to be buggy in how it handles multiple simultaneous requests.
 
 Note 2: Be careful when setting the log level, e.g., DEBUG logs could contain PII. The default is set to INFO.
 
+## Testing
+
+The `tests/` directory contains automated tests for the prover server:
+
+````sh
+# Build and run all tests
+./tests/build_server.sh
+./tests/run_all_tests.sh
+
+# Or run tests individually
+./tests/start_server.sh
+./tests/test_basic.sh
+./tests/test_dos_protection.sh
+./tests/stop_server.sh
+````
+
+See [tests/README.md](tests/README.md) for detailed documentation.
+
 ## Benchmark
 
-This prover uses intel assembly with ADX extensions and parallelizes as much as it can the proof generation. 
+This prover uses intel assembly with ADX extensions and parallelizes as much as it can the proof generation.
 
 The prover is much faster that snarkjs and faster than bellman.
 

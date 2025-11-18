@@ -1,18 +1,51 @@
 #include "proverapi.hpp"
 #include "nlohmann/json.hpp"
 #include "logger.hpp"
+#include <chrono>
+#include <sstream>
 
 using namespace Pistache;
 using json = nlohmann::json;
 
 void ProverAPI::postInput(const Rest::Request& request, Http::ResponseWriter response) {
+    // Try to acquire semaphore - reject immediately if at capacity
+    if (!request_limit.try_acquire()) {
+        LOG_INFO("Server at capacity, rejecting request");
+        response.send(Http::Code::Service_Unavailable,
+                     "Server at capacity, please retry later",
+                     MIME(Text, Plain));
+        return;
+    }
+
+    // Start timing the request
+    auto request_start = std::chrono::steady_clock::now();
+
+    bool success = true;
     try {
-        json j = prover.startProve(request.body());
+        // Generate proof
+        json j;
+        {
+            SemaphoreReleaseGuard guard(request_limit);
+            j = prover.startProve(request.body());
+        }
         LOG_DEBUG(j.dump().c_str());
+
         response.send(Http::Code::Ok, j.dump(), MIME(Application, Json));
-    } catch (const std::exception &e) {
+
+    } catch (const std::exception& e) {
+        success = false;
         auto errString = e.what();
         LOG_ERROR(errString);
         response.send(Http::Code::Bad_Request, errString);
     }
+
+    // Log e2e timing
+    auto request_end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        request_end - request_start).count();
+
+    std::ostringstream oss;
+    oss << "Request " << (success ? "completed" : "failed") << " in " << duration << "ms";
+    std::string log_msg = oss.str();
+    LOG_INFO(log_msg);
 }
