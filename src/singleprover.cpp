@@ -133,7 +133,8 @@ std::unique_ptr<Groth16::Proof<AltBn128::Engine>> SingleProver::prove(AltBn128::
     auto t_lock1 = std::chrono::steady_clock::now();
 
     auto lock_wait_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_lock1 - t_lock0).count();
-    LOG_INFO("SingleProver::prove mutex wait " + std::to_string(lock_wait_ms) + "ms");
+    std::string log_msg = "SingleProver::prove mutex wait " + std::to_string(lock_wait_ms) + "ms";
+    LOG_INFO(log_msg);
     LOG_INFO("SingleProver::prove begin");
 
     auto t1 = std::chrono::steady_clock::now();

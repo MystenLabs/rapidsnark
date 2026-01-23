@@ -16,7 +16,8 @@ void ProverAPI::postInput(const Rest::Request& request, Http::ResponseWriter res
 
     // Try to acquire semaphore - reject immediately if at capacity
     if (!request_limit.try_acquire()) {
-        LOG_INFO("Server at capacity, rejecting request id=" + std::to_string(id));
+        std::string log_msg_capacity = "Server at capacity, rejecting request id=" + std::to_string(id);
+        LOG_INFO(log_msg_capacity);
         response.send(Http::Code::Service_Unavailable,
                      "Server at capacity, please retry later",
                      MIME(Text, Plain));
@@ -24,7 +25,8 @@ void ProverAPI::postInput(const Rest::Request& request, Http::ResponseWriter res
     }
 
     const int in_flight_now = in_flight.fetch_add(1, std::memory_order_relaxed) + 1;
-    LOG_INFO("Accepted request id=" + std::to_string(id) + " in_flight=" + std::to_string(in_flight_now));
+    std::string log_msg_accept = "Accepted request id=" + std::to_string(id) + " in_flight=" + std::to_string(in_flight_now);
+    LOG_INFO(log_msg_accept);
 
     // Start timing the request
     auto request_start = std::chrono::steady_clock::now();
