@@ -128,7 +128,12 @@ json SingleProver::startProve(std::string input)
 std::unique_ptr<Groth16::Proof<AltBn128::Engine>> SingleProver::prove(AltBn128::FrElement *wtnsData) {
     // The mutex is set because the performance of prover->prove degrades significantly
     //  when multiple instances are run in parallel.
-    std::lock_guard<std::mutex> guard(mtx);
+    auto t_lock0 = std::chrono::steady_clock::now();
+    std::unique_lock<std::mutex> guard(mtx);
+    auto t_lock1 = std::chrono::steady_clock::now();
+
+    auto lock_wait_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_lock1 - t_lock0).count();
+    LOG_INFO("SingleProver::prove mutex wait " + std::to_string(lock_wait_ms) + "ms");
     LOG_INFO("SingleProver::prove begin");
 
     auto t1 = std::chrono::steady_clock::now();
