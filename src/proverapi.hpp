@@ -8,8 +8,12 @@
 
 using namespace Pistache;
 
-// Maximum number of concurrent proof requests allowed
-constexpr int DEFAULT_MAX_CONCURRENT_REQUESTS = 20;
+// Maximum number of concurrent proof requests allowed.
+//
+// Rationale: proof generation is effectively serialized by a mutex in SingleProver::prove().
+// With FE timing out around 15s and typical timings of ~0.8s witness + ~2s proof per request,
+// we cap in-flight work to keep the queueing tail within the FE timeout under moderate variance.
+constexpr int DEFAULT_MAX_CONCURRENT_REQUESTS = 6;
 
 // RAII guard for releasing an acquired semaphore on scope exit
 class SemaphoreReleaseGuard {
