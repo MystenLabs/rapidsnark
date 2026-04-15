@@ -4,7 +4,6 @@
 #include "fr.hpp"
 
 #include "logger.hpp"
-#include "wtns_utils.hpp"
 
 extern "C" {
 #include "graph_witness.h"
@@ -100,18 +99,16 @@ json SingleProver::startProve(std::string input)
     auto t0 = std::chrono::steady_clock::now();
     LOG_DEBUG(input);
 
-    void *wtnsBuffer = nullptr;
-    size_t wtnsLen = 0;
+    void *feData = nullptr;
+    size_t feCount = 0;
     gw_status_t status = {OK, nullptr};
 
-    int rc = gw_calc_witness_prepared(
+    int rc = gw_calc_witness_raw_prepared(
         graphHandle,
         input.c_str(),
-        &wtnsBuffer, &wtnsLen,
+        &feData, &feCount,
         &status);
 
-    // Note: v0.3.0 of circom-witnesscalc sets status.error_msg on both success
-    // and failure (see lib.rs line 127), so we rely on rc and always free.
     if (rc != 0) {
         std::string msg = "Witness generation failed";
         if (status.error_msg != nullptr) {
@@ -123,22 +120,16 @@ json SingleProver::startProve(std::string input)
     }
     gw_free_status(&status);
 
-    // wtnsBuffer is owned by Rust's allocator (handed to us via Box::into_raw)
-    // and must survive until after prove() because BinFile borrows it. Release
-    // via gw_free_witness on scope exit — do NOT call free().
-    struct WtnsBufferGuard {
+    // feData is owned by Rust's allocator and holds feCount * 32 bytes of
+    // 32-byte LE field elements, laid out exactly like AltBn128::FrElement.
+    // Release via gw_free_witness on scope exit — do NOT call free().
+    struct FeBufferGuard {
         void *p;
-        size_t n;
-        ~WtnsBufferGuard() { if (p) gw_free_witness(p, n); }
-    } wtnsGuard{wtnsBuffer, wtnsLen};
+        size_t bytes;
+        ~FeBufferGuard() { if (p) gw_free_witness(p, bytes); }
+    } feGuard{feData, feCount * 32};
 
-    auto wtns = BinFileUtils::openFromBuffer(wtnsBuffer, wtnsLen, "wtns", 2);
-    auto wtnsHeader = WtnsUtils::loadHeader(wtns.get());
-    if (mpz_cmp(wtnsHeader->prime, altBbn128r) != 0) {
-        throw std::invalid_argument("Different wtns curve");
-    }
-
-    AltBn128::FrElement *wtnsData = (AltBn128::FrElement *)wtns->getSectionData(2);
+    AltBn128::FrElement *wtnsData = (AltBn128::FrElement *)feData;
     auto t1 = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     std::string output("Witness generation finished in " + std::to_string(duration) + "ms");

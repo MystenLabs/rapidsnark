@@ -1,5 +1,6 @@
-// Micro-benchmark comparing gw_calc_witness (raw bytes, re-parses every call)
-// against gw_prepare_graph + gw_calc_witness_prepared (parse once, reuse).
+// Micro-benchmark comparing gw_calc_witness (re-parses graph every call,
+// returns WTNS bytes) against gw_prepare_graph + gw_calc_witness_raw_prepared
+// (parse once, reuse, returns raw field-element bytes — the fast server path).
 //
 // Usage: bench_witness <graph.bin> <inputs.json> [num_runs]
 
@@ -57,7 +58,7 @@ int main(int argc, char **argv) {
         std::printf("  run %d: %lld ms\n", i + 1, (long long)ms);
     }
 
-    std::printf("\n=== gw_calc_witness_prepared (parse once, reuse) ===\n");
+    std::printf("\n=== gw_calc_witness_raw_prepared (parse once, reuse, raw FEs) ===\n");
     auto tp0 = std::chrono::steady_clock::now();
     void *handle = nullptr;
     gw_status_t pst = {OK, nullptr};
@@ -69,17 +70,17 @@ int main(int argc, char **argv) {
         (long long)std::chrono::duration_cast<std::chrono::milliseconds>(tp1 - tp0).count());
 
     for (int i = 0; i < runs; i++) {
-        void *wtns = nullptr;
-        size_t wlen = 0;
+        void *fe = nullptr;
+        size_t feN = 0;
         gw_status_t st = {OK, nullptr};
         auto t0 = std::chrono::steady_clock::now();
-        int rc = gw_calc_witness_prepared(handle, inputs.c_str(),
-                                          &wtns, &wlen, &st);
+        int rc = gw_calc_witness_raw_prepared(handle, inputs.c_str(),
+                                              &fe, &feN, &st);
         auto t1 = std::chrono::steady_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
         if (rc != 0) { std::fprintf(stderr, "fail: %s\n", st.error_msg ? st.error_msg : "?"); return 1; }
         gw_free_status(&st);
-        free(wtns);
+        gw_free_witness(fe, feN * 32);
         std::printf("  run %d: %lld ms\n", i + 1, (long long)ms);
     }
 
