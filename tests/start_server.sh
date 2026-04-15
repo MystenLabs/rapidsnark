@@ -47,6 +47,7 @@ screen -dmS rapidsnark bash -c \
   "cd $SCRIPT_DIR && \
    ZKEY=$ZKEY_PATH \
    WITNESS_GRAPH=$WITNESS_GRAPH_PATH \
+   PORT=$SERVER_PORT \
    LD_LIBRARY_PATH=$SCRIPT_DIR/depends/pistache/build/src:$SCRIPT_DIR/depends/circom-witnesscalc/target/release:\$LD_LIBRARY_PATH \
    ./build/proverServer 2>&1 | tee $LOG_FILE"
 

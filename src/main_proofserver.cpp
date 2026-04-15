@@ -21,6 +21,13 @@ int main(int argc, char **argv) {
     LOG_INFO("Initializing server...");
 
     int port = 8080;
+    if (const char* p = getenv("PORT")) {
+        port = std::atoi(p);
+        if (port <= 0) {
+            std::cerr << "Invalid PORT env var: " << p << "\n";
+            return -1;
+        }
+    }
 
     // The path to the zkey file, e.g., "/app/zkLogin.zkey"
     std::string zkeyFilePath;
