@@ -6,6 +6,7 @@
 //
 // Usage: test_raw_vs_wrapped <graph.bin> <inputs.json>
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
