@@ -29,10 +29,12 @@ namespace BinFileUtils {
 
         Section *readingSection;
 
+        void parseSections(const std::string &type, uint32_t maxVersion);
 
     public:
 
         BinFile(std::string fileName, std::string type, uint32_t maxVersion);
+        BinFile(const void *buffer, uint64_t bufferSize, std::string type, uint32_t maxVersion);
         ~BinFile();
 
         void *getSetcionData(u_int32_t sectionId, u_int32_t sectionPos = 0);
@@ -50,6 +52,7 @@ namespace BinFileUtils {
     };
 
     std::unique_ptr<BinFile> openExisting(std::string filename, std::string type, uint32_t maxVersion);
+    std::unique_ptr<BinFile> openFromBuffer(const void *buffer, uint64_t bufferSize, std::string type, uint32_t maxVersion);
 }
 
 #endif // BINFILE_UTILS_H
