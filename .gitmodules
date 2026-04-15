@@ -10,3 +10,6 @@
 [submodule "depends/circom_runtime"]
 	path = depends/circom_runtime
 	url = https://github.com/iden3/circom_runtime.git
+[submodule "depends/circom-witnesscalc"]
+	path = depends/circom-witnesscalc
+	url = https://github.com/iden3/circom-witnesscalc.git

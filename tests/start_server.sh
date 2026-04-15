@@ -4,7 +4,7 @@ set -e
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ZKEY_PATH="${ZKEY_PATH:-$SCRIPT_DIR/binaries/zkLogin.zkey}"
-WITNESS_BINARIES_PATH="${WITNESS_BINARIES_PATH:-$SCRIPT_DIR/binaries}"
+WITNESS_GRAPH_PATH="${WITNESS_GRAPH_PATH:-$SCRIPT_DIR/binaries/zkLogin.bin}"
 SERVER_PORT="${SERVER_PORT:-8080}"
 LOG_FILE="${LOG_FILE:-/tmp/prover.log}"
 
@@ -12,7 +12,7 @@ cd "$SCRIPT_DIR"
 
 echo "=== Configuration ==="
 echo "ZKEY_PATH: $ZKEY_PATH"
-echo "WITNESS_BINARIES_PATH: $WITNESS_BINARIES_PATH"
+echo "WITNESS_GRAPH_PATH: $WITNESS_GRAPH_PATH"
 echo "SERVER_PORT: $SERVER_PORT"
 echo "LOG_FILE: $LOG_FILE"
 echo ""
@@ -23,8 +23,8 @@ if [ ! -f "$ZKEY_PATH" ]; then
     exit 1
 fi
 
-if [ ! -d "$WITNESS_BINARIES_PATH" ]; then
-    echo "ERROR: WITNESS_BINARIES directory not found at $WITNESS_BINARIES_PATH"
+if [ ! -f "$WITNESS_GRAPH_PATH" ]; then
+    echo "ERROR: WITNESS_GRAPH file not found at $WITNESS_GRAPH_PATH"
     exit 1
 fi
 
@@ -46,8 +46,8 @@ rm -f "$LOG_FILE"
 screen -dmS rapidsnark bash -c \
   "cd $SCRIPT_DIR && \
    ZKEY=$ZKEY_PATH \
-   WITNESS_BINARIES=$WITNESS_BINARIES_PATH \
-   LD_LIBRARY_PATH=$SCRIPT_DIR/depends/pistache/build/src:\$LD_LIBRARY_PATH \
+   WITNESS_GRAPH=$WITNESS_GRAPH_PATH \
+   LD_LIBRARY_PATH=$SCRIPT_DIR/depends/pistache/build/src:$SCRIPT_DIR/depends/circom-witnesscalc/target/release:\$LD_LIBRARY_PATH \
    ./build/proverServer 2>&1 | tee $LOG_FILE"
 
 # Wait for server to be ready
