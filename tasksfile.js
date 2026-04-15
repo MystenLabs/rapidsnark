@@ -33,7 +33,12 @@ function buildPistache() {
 
 function buildWitnesscalc() {
     sh("git submodule init && git submodule update");
-    sh("cargo build --release --lib", {cwd: "depends/circom-witnesscalc", nopipe: true});
+    // circom-witnesscalc's workspace includes a member requiring Rust edition
+    // 2024, so cargo needs to be >= 1.85. Prefer rustup's cargo (often in
+    // ~/.cargo/bin) over an older system cargo.
+    const rustupBin = `${process.env.HOME}/.cargo/bin`;
+    const env = {...process.env, PATH: `${rustupBin}:${process.env.PATH}`};
+    sh("cargo build --release --lib", {cwd: "depends/circom-witnesscalc", nopipe: true, env});
 }
 
 
