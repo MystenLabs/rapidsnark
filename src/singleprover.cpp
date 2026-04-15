@@ -41,7 +41,8 @@ SingleProver::SingleProver(std::string zkeyFilePath, std::string graphFilePath)
     gw_free_status(&prepStatus);
     auto t_prep1 = std::chrono::steady_clock::now();
     auto prep_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_prep1 - t_prep0).count();
-    LOG_INFO("Graph parsed and cached in " + std::to_string(prep_ms) + "ms");
+    std::string prepLog = "Graph parsed and cached in " + std::to_string(prep_ms) + "ms";
+    LOG_INFO(prepLog);
 
     std::ifstream file3(zkeyFilePath.c_str());
     if (! file3.good()) {
