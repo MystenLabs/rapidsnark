@@ -10,7 +10,8 @@ extern "C" {
 #include "graph_witness.h"
 }
 
-SingleProver::SingleProver(std::string zkeyFilePath, std::string graphFilePath) {
+SingleProver::SingleProver(std::string zkeyFilePath, std::string graphFilePath)
+    : graphHandle(nullptr) {
     LOG_INFO("SingleProver::SingleProver begin");
     auto t0 = std::chrono::steady_clock::now();
 
@@ -20,10 +21,27 @@ SingleProver::SingleProver(std::string zkeyFilePath, std::string graphFilePath) 
     }
     std::streamsize graphSize = graphFile.tellg();
     graphFile.seekg(0, std::ios::beg);
-    graphData.resize(graphSize);
-    if (! graphFile.read(reinterpret_cast<char*>(graphData.data()), graphSize)) {
+    std::vector<uint8_t> graphBytes(graphSize);
+    if (! graphFile.read(reinterpret_cast<char*>(graphBytes.data()), graphSize)) {
         throw std::runtime_error("failed to read witness graph file at " + graphFilePath);
     }
+
+    auto t_prep0 = std::chrono::steady_clock::now();
+    gw_status_t prepStatus = {OK, nullptr};
+    int rc = gw_prepare_graph(graphBytes.data(), graphBytes.size(), &graphHandle, &prepStatus);
+    if (rc != 0) {
+        std::string msg = "Failed to prepare witness graph";
+        if (prepStatus.error_msg != nullptr) {
+            msg += ": ";
+            msg += prepStatus.error_msg;
+        }
+        gw_free_status(&prepStatus);
+        throw std::invalid_argument(msg);
+    }
+    gw_free_status(&prepStatus);
+    auto t_prep1 = std::chrono::steady_clock::now();
+    auto prep_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_prep1 - t_prep0).count();
+    LOG_INFO("Graph parsed and cached in " + std::to_string(prep_ms) + "ms");
 
     std::ifstream file3(zkeyFilePath.c_str());
     if (! file3.good()) {
@@ -67,6 +85,10 @@ SingleProver::SingleProver(std::string zkeyFilePath, std::string graphFilePath) 
 
 SingleProver::~SingleProver()
 {
+    if (graphHandle != nullptr) {
+        gw_free_graph(graphHandle);
+        graphHandle = nullptr;
+    }
     mpz_clear(altBbn128r);
 }
 
@@ -81,9 +103,9 @@ json SingleProver::startProve(std::string input)
     size_t wtnsLen = 0;
     gw_status_t status = {OK, nullptr};
 
-    int rc = gw_calc_witness(
+    int rc = gw_calc_witness_prepared(
+        graphHandle,
         input.c_str(),
-        graphData.data(), graphData.size(),
         &wtnsBuffer, &wtnsLen,
         &status);
 

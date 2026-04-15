@@ -20,7 +20,10 @@
  */
 class SingleProver {
 
-    std::vector<uint8_t> graphData;
+    // Opaque handle returned by gw_prepare_graph; owns the parsed graph.
+    // Reused across all witness calculations so the deserialization cost
+    // (~275 ms for zkLogin) is only paid once at server init.
+    void *graphHandle;
     mpz_t altBbn128r;
     std::unique_ptr<Groth16::Prover<AltBn128::Engine> > prover;
     std::unique_ptr<ZKeyUtils::Header> zkHeader;
