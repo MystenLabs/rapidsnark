@@ -123,12 +123,14 @@ json SingleProver::startProve(std::string input)
     }
     gw_free_status(&status);
 
-    // wtnsBuffer is libc::malloc'd by Rust and must survive until after prove()
-    // because BinFile now borrows it (no internal copy). Free on scope exit.
+    // wtnsBuffer is owned by Rust's allocator (handed to us via Box::into_raw)
+    // and must survive until after prove() because BinFile borrows it. Release
+    // via gw_free_witness on scope exit — do NOT call free().
     struct WtnsBufferGuard {
         void *p;
-        ~WtnsBufferGuard() { if (p) free(p); }
-    } wtnsGuard{wtnsBuffer};
+        size_t n;
+        ~WtnsBufferGuard() { if (p) gw_free_witness(p, n); }
+    } wtnsGuard{wtnsBuffer, wtnsLen};
 
     auto wtns = BinFileUtils::openFromBuffer(wtnsBuffer, wtnsLen, "wtns", 2);
     auto wtnsHeader = WtnsUtils::loadHeader(wtns.get());
