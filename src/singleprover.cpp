@@ -123,8 +123,14 @@ json SingleProver::startProve(std::string input)
     }
     gw_free_status(&status);
 
+    // wtnsBuffer is libc::malloc'd by Rust and must survive until after prove()
+    // because BinFile now borrows it (no internal copy). Free on scope exit.
+    struct WtnsBufferGuard {
+        void *p;
+        ~WtnsBufferGuard() { if (p) free(p); }
+    } wtnsGuard{wtnsBuffer};
+
     auto wtns = BinFileUtils::openFromBuffer(wtnsBuffer, wtnsLen, "wtns", 2);
-    free(wtnsBuffer);
     auto wtnsHeader = WtnsUtils::loadHeader(wtns.get());
     if (mpz_cmp(wtnsHeader->prime, altBbn128r) != 0) {
         throw std::invalid_argument("Different wtns curve");

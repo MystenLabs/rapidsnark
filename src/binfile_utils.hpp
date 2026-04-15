@@ -12,6 +12,7 @@ namespace BinFileUtils {
         void *addr;
         u_int64_t size;
         u_int64_t pos;
+        bool ownsAddr;
 
         class Section {
             void *start;

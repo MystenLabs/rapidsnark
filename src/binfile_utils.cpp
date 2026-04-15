@@ -34,14 +34,17 @@ BinFile::BinFile(std::string fileName, std::string _type, uint32_t maxVersion) {
     memcpy(addr, addrmm, sb.st_size);
     munmap(addrmm, sb.st_size);
     close(fd);
+    ownsAddr = true;
 
     parseSections(_type, maxVersion);
 }
 
+// Borrows `buffer`: no copy, no ownership transfer. Caller must keep the
+// buffer alive for the lifetime of this BinFile.
 BinFile::BinFile(const void *buffer, uint64_t bufferSize, std::string _type, uint32_t maxVersion) {
     size = bufferSize;
-    addr = malloc(bufferSize);
-    memcpy(addr, buffer, bufferSize);
+    addr = const_cast<void *>(buffer);
+    ownsAddr = false;
     parseSections(_type, maxVersion);
 }
 
@@ -79,7 +82,9 @@ void BinFile::parseSections(const std::string &_type, uint32_t maxVersion) {
 }
 
 BinFile::~BinFile() {
-    free(addr);
+    if (ownsAddr) {
+        free(addr);
+    }
 }
 
 void BinFile::startReadSection(u_int32_t sectionId, u_int32_t sectionPos) {
