@@ -41,6 +41,9 @@ BIN="$REPO/build/witness_test"
 PLATFORM_LINK=""
 if [[ "$(uname -s)" == "Darwin" ]]; then
     PLATFORM_LINK="-framework Security -framework CoreFoundation"
+    export DYLD_LIBRARY_PATH="$LIB_DIR${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+else
+    export LD_LIBRARY_PATH="$LIB_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 fi
 
 echo "==> Building witness_test..."
