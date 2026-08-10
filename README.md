@@ -4,7 +4,11 @@ rapid snark is a zkSnark proof generation written in C++ and intel assembly. Tha
 
 ## Dependencies
 
-You should have installed gcc, cmake, libsodium, and gmp (development)
+You should have installed gcc, cmake, libsodium, and gmp (development).
+
+The prover server also links against [circom-witnesscalc](https://github.com/iden3/circom-witnesscalc)
+for witness generation, which is built from the submodule under `depends/circom-witnesscalc`
+using `cargo`. Install Rust (https://rustup.rs) if you don't already have it.
 
 In ubuntu:
 
@@ -30,6 +34,7 @@ git submodule init
 git submodule update
 npx task createFieldSources
 npx task buildPistache
+npx task buildWitnesscalc
 npx task buildProverServer
 ````
 
@@ -58,13 +63,22 @@ Note that the first two arguments are the input files whereas the last two corre
 
 ## Launch prover in server mode
 
-In server mode, the prover also compiles the inputs to generate a witness.
+In server mode, the prover also computes the witness for each request using
+[circom-witnesscalc](https://github.com/iden3/circom-witnesscalc), which
+interprets a pre-built graph binary (`.bin`) instead of invoking a standalone
+C++ witness binary.
 
-If your circuit's name is `circuit.circom`, then you have to generate the C++ binaries using circom ([link from circom docs](https://docs.circom.io/getting-started/computing-the-witness/#computing-the-witness-with-c)). In the end, you should have two files `circuit` and `circuit.dat`.
+If your circuit's name is `circuit.circom`, generate the graph binary with:
+
+````sh
+build-circuit circuit.circom circuit.bin -l <libs>
+````
+
+(`build-circuit` is shipped with circom-witnesscalc.)
 
 To launch the server, set two environment variables:
 1. `ZKEY`: Pointing to the zkey file
-2.  `WITNESS_BINARIES`: Pointing to the folder in which `circuit` and `circuit.dat` are present
+2. `WITNESS_GRAPH`: Pointing to the circom-witnesscalc graph binary (`circuit.bin`)
 
 and run
 ````sh

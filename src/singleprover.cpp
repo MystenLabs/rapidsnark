@@ -1,4 +1,4 @@
-#include <unistd.h>
+#include <fstream>
 
 #include <singleprover.hpp>
 #include "fr.hpp"
@@ -6,27 +6,28 @@
 #include "logger.hpp"
 #include "wtns_utils.hpp"
 
-SingleProver::SingleProver(std::string zkeyFilePath, std::string binariesFolderPath) {
+extern "C" {
+#include "graph_witness.h"
+}
+
+SingleProver::SingleProver(std::string zkeyFilePath, std::string graphFilePath) {
     LOG_INFO("SingleProver::SingleProver begin");
     auto t0 = std::chrono::steady_clock::now();
 
-    witnessBinaryFilePath = binariesFolderPath + "/zkLogin";
-    std::string witnessDatFilePath = binariesFolderPath + "/zkLogin.dat";
-
-    // Check if all the files exist
-    std::ifstream file1(witnessBinaryFilePath.c_str());
-    if (! file1.good()) {
-        throw std::invalid_argument("cannot find the file zkLogin at " + witnessBinaryFilePath);
+    std::ifstream graphFile(graphFilePath, std::ios::binary | std::ios::ate);
+    if (! graphFile.good()) {
+        throw std::invalid_argument("cannot find the witness graph file at " + graphFilePath);
     }
-
-    std::ifstream file2(witnessDatFilePath.c_str());
-    if (! file2.good()) {
-        throw std::invalid_argument("cannot find the file zkLogin.dat at " + witnessDatFilePath);
+    std::streamsize graphSize = graphFile.tellg();
+    graphFile.seekg(0, std::ios::beg);
+    graphData.resize(graphSize);
+    if (! graphFile.read(reinterpret_cast<char*>(graphData.data()), graphSize)) {
+        throw std::runtime_error("failed to read witness graph file at " + graphFilePath);
     }
 
     std::ifstream file3(zkeyFilePath.c_str());
     if (! file3.good()) {
-        throw std::invalid_argument("cannot find the file zkLogin.zkey at " + zkeyFilePath);
+        throw std::invalid_argument("cannot find the zkey file at " + zkeyFilePath);
     }
 
     mpz_init(altBbn128r);
@@ -39,7 +40,7 @@ SingleProver::SingleProver(std::string zkeyFilePath, std::string binariesFolderP
     if (mpz_cmp(zkHeader->rPrime, altBbn128r) != 0) {
         throw std::invalid_argument("zkey curve not supported" );
     }
-    
+
     prover = Groth16::makeProver<AltBn128::Engine>(
         zkHeader->nVars,
         zkHeader->nPublic,
@@ -60,24 +61,13 @@ SingleProver::SingleProver(std::string zkeyFilePath, std::string binariesFolderP
 
     auto t1 = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
-    std::string output("SingleProver::SingleProver initialized from zkey in " + std::to_string(duration) + "ms");
+    std::string output("SingleProver::SingleProver initialized from zkey and witness graph in " + std::to_string(duration) + "ms");
     LOG_INFO(output);
 }
 
 SingleProver::~SingleProver()
 {
     mpz_clear(altBbn128r);
-}
-
-// Function to generate a unique temporary file name
-std::string generateTempFileName() {
-    char templateName[] = "/tmp/zklogin_XXXXXX";
-    int fd;
-    if ((fd = mkstemp(templateName)) == -1) {
-        throw std::runtime_error("Failed to create a unique temporary file name");
-    }
-    close(fd);
-    return templateName;
 }
 
 json SingleProver::startProve(std::string input)
@@ -87,27 +77,31 @@ json SingleProver::startProve(std::string input)
     auto t0 = std::chrono::steady_clock::now();
     LOG_DEBUG(input);
 
-    json j = json::parse(input);
-    std::string inputFileName = generateTempFileName();
-    std::ofstream file(inputFileName);
-    file << j;
-    file.close();
+    void *wtnsBuffer = nullptr;
+    size_t wtnsLen = 0;
+    gw_status_t status = {OK, nullptr};
 
-    std::string witnessFileName = generateTempFileName();
-    std::string command(witnessBinaryFilePath + " " + inputFileName + " " + witnessFileName);
-    LOG_INFO(command);
-    std::array<char, 128> buffer;
-    std::string result;
+    int rc = gw_calc_witness(
+        input.c_str(),
+        graphData.data(), graphData.size(),
+        &wtnsBuffer, &wtnsLen,
+        &status);
 
-    int returnCode = std::system(command.c_str());
-    if (returnCode != 0) {
-        LOG_INFO("Unexpected returnCode");
-        auto str = std::to_string(returnCode);
-        LOG_INFO(str);
-        throw std::invalid_argument("Witness generation failed: check the inputs");
+    // Note: v0.3.0 of circom-witnesscalc sets status.error_msg on both success
+    // and failure (see lib.rs line 127), so we rely on rc and always free.
+    if (rc != 0) {
+        std::string msg = "Witness generation failed";
+        if (status.error_msg != nullptr) {
+            msg += ": ";
+            msg += status.error_msg;
+        }
+        gw_free_status(&status);
+        throw std::invalid_argument(msg);
     }
+    gw_free_status(&status);
 
-    auto wtns = BinFileUtils::openExisting(witnessFileName, "wtns", 2);
+    auto wtns = BinFileUtils::openFromBuffer(wtnsBuffer, wtnsLen, "wtns", 2);
+    free(wtnsBuffer);
     auto wtnsHeader = WtnsUtils::loadHeader(wtns.get());
     if (mpz_cmp(wtnsHeader->prime, altBbn128r) != 0) {
         throw std::invalid_argument("Different wtns curve");
@@ -118,9 +112,6 @@ json SingleProver::startProve(std::string input)
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     std::string output("Witness generation finished in " + std::to_string(duration) + "ms");
     LOG_INFO(output);
-
-    unlink(witnessFileName.c_str());
-    unlink(inputFileName.c_str());
 
     return prove(wtnsData)->toJson();
 }

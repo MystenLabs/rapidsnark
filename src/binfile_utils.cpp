@@ -9,6 +9,10 @@
 
 #include "binfile_utils.hpp"
 
+#ifndef MAP_POPULATE
+#define MAP_POPULATE 0
+#endif
+
 namespace BinFileUtils {
 
 BinFile::BinFile(std::string fileName, std::string _type, uint32_t maxVersion) {
@@ -19,7 +23,7 @@ BinFile::BinFile(std::string fileName, std::string _type, uint32_t maxVersion) {
     fd = open(fileName.c_str(), O_RDONLY);
     if (fd == -1)
         throw std::system_error(errno, std::generic_category(), "open");
-        
+
 
     if (fstat(fd, &sb) == -1)           /* To obtain file size */
         throw std::system_error(errno, std::generic_category(), "fstat");
@@ -31,6 +35,17 @@ BinFile::BinFile(std::string fileName, std::string _type, uint32_t maxVersion) {
     munmap(addrmm, sb.st_size);
     close(fd);
 
+    parseSections(_type, maxVersion);
+}
+
+BinFile::BinFile(const void *buffer, uint64_t bufferSize, std::string _type, uint32_t maxVersion) {
+    size = bufferSize;
+    addr = malloc(bufferSize);
+    memcpy(addr, buffer, bufferSize);
+    parseSections(_type, maxVersion);
+}
+
+void BinFile::parseSections(const std::string &_type, uint32_t maxVersion) {
     type.assign((const char *)addr, 4);
     pos = 4;
 
@@ -141,6 +156,10 @@ void *BinFile::read(u_int64_t len) {
 
 std::unique_ptr<BinFile> openExisting(std::string filename, std::string type, uint32_t maxVersion) {
     return std::unique_ptr<BinFile>(new BinFile(filename, type, maxVersion));
+}
+
+std::unique_ptr<BinFile> openFromBuffer(const void *buffer, uint64_t bufferSize, std::string type, uint32_t maxVersion) {
+    return std::unique_ptr<BinFile>(new BinFile(buffer, bufferSize, type, maxVersion));
 }
 
 } // Namespace

@@ -11,8 +11,8 @@ using namespace Pistache::Rest;
 
 void printUsage() {
     std::cerr << "Invalid usage\n";
-    std::cerr << "Either use command line args: ./proverServer <zkLogin.zkey> <path_to_binaries>\n";
-    std::cerr << "Or set ZKEY and WITNESS_BINARIES env variables and call ./proverServer\n";
+    std::cerr << "Either use command line args: ./proverServer <zkLogin.zkey> <path_to_graph.bin>\n";
+    std::cerr << "Or set ZKEY and WITNESS_GRAPH env variables and call ./proverServer\n";
 }
 
 int main(int argc, char **argv) {
@@ -21,17 +21,24 @@ int main(int argc, char **argv) {
     LOG_INFO("Initializing server...");
 
     int port = 8080;
+    if (const char* p = getenv("PORT")) {
+        port = std::atoi(p);
+        if (port <= 0) {
+            std::cerr << "Invalid PORT env var: " << p << "\n";
+            return -1;
+        }
+    }
 
     // The path to the zkey file, e.g., "/app/zkLogin.zkey"
     std::string zkeyFilePath;
-    // The folder name in which zkLogin and zkLogin.dat binaries can be found.
-    std::string binariesFolderPath;
+    // The path to the circom-witnesscalc graph binary, e.g., "/app/zkLogin.bin"
+    std::string graphFilePath;
 
     if (argc == 3) {
         zkeyFilePath = argv[1];
-        binariesFolderPath = argv[2];
+        graphFilePath = argv[2];
     } else if (argc == 1) {
-        LOG_INFO("Reading from environment variables ZKEY and WITNESS_BINARIES");
+        LOG_INFO("Reading from environment variables ZKEY and WITNESS_GRAPH");
         if (const char* x = getenv("ZKEY")) {
             zkeyFilePath = x;
         } else {
@@ -39,8 +46,8 @@ int main(int argc, char **argv) {
             return -1;
         }
 
-        if (const char* x = getenv("WITNESS_BINARIES")) {
-            binariesFolderPath = x;
+        if (const char* x = getenv("WITNESS_GRAPH")) {
+            graphFilePath = x;
         } else {
             printUsage();
             return -1;
@@ -50,7 +57,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    SingleProver prover(zkeyFilePath, binariesFolderPath);
+    SingleProver prover(zkeyFilePath, graphFilePath);
     ProverAPI proverAPI(prover);
     Address addr(Ipv4::any(), Port(port));
 

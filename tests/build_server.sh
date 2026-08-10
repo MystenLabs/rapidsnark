@@ -8,24 +8,28 @@ cd "$SCRIPT_DIR"
 echo "=== Building prover server ==="
 echo ""
 
-echo "Step 1/5: Installing npm dependencies..."
+echo "Step 1/6: Installing npm dependencies..."
 npm install
 
 echo ""
-echo "Step 2/5: Initializing git submodules..."
+echo "Step 2/6: Initializing git submodules..."
 git submodule init
 git submodule update
 
 echo ""
-echo "Step 3/5: Creating field sources..."
+echo "Step 3/6: Creating field sources..."
 npx task createFieldSources
 
 echo ""
-echo "Step 4/5: Building Pistache library..."
+echo "Step 4/6: Building Pistache library..."
 npx task buildPistache
 
 echo ""
-echo "Step 5/5: Building prover server..."
+echo "Step 5/6: Building circom-witnesscalc library..."
+npx task buildWitnesscalc
+
+echo ""
+echo "Step 6/6: Building prover server..."
 npx task buildProverServer
 
 echo ""

@@ -31,13 +31,24 @@ function buildPistache() {
 }
 
 
+function buildWitnesscalc() {
+    sh("git submodule init && git submodule update");
+    sh("cargo build --release --lib", {cwd: "depends/circom-witnesscalc", nopipe: true});
+}
+
+
 function buildProverServer() {
+    // On macOS the Rust staticlib needs the Security/CoreFoundation frameworks.
+    const platformFlags = process.platform === "darwin"
+        ? " -framework Security -framework CoreFoundation"
+        : "";
     sh("g++" +
         " -I."+
         " -I../src"+
         " -I../depends/pistache/include"+
         " -I../depends/json/single_include"+
         " -I../depends/ffiasm/c"+
+        " -I../depends/circom-witnesscalc/include"+
         " ../src/main_proofserver.cpp"+
         " ../src/proverapi.cpp"+
         " ../src/singleprover.cpp"+
@@ -54,6 +65,8 @@ function buildProverServer() {
         " fr.cpp"+
         " fr.o"+
         " -L../depends/pistache/build/src -lpistache"+
+        " -L../depends/circom-witnesscalc/target/release -lcircom_witnesscalc"+
+        platformFlags+
         " -o proverServer"+
         " -fmax-errors=5 -pthread -std=c++20 -fopenmp -lgmp -lsodium -O3 -g -DSANITY_CHECK", {cwd: "build", nopipe: true}
     );
@@ -89,6 +102,7 @@ cli({
     cleanAll,
     createFieldSources,
     buildPistache,
+    buildWitnesscalc,
     buildProverServer,
     buildProver
 });
